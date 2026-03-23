@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const schoolAddress = document.getElementById('school-address');
     const letterMatter = document.getElementById('letter-matter');
     const letterSubhead = document.getElementById('letter-subhead');
+    const letterDesignation = document.getElementById('letter-designation'); // Added designation input
     const letterPlace = document.getElementById('letter-place');
     const letterDate = document.getElementById('letter-date');
 
@@ -25,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const prevDate = document.getElementById('live-prev-date');
     const prevSubhead = document.getElementById('live-prev-subhead');
     const prevMatter = document.getElementById('live-prev-matter');
+    const prevDesignation = document.getElementById('live-prev-designation');
 
     // 1b. Firebase Initialization (New Isolated Project)
     const firebaseConfig = {
@@ -55,6 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data) {
                     schoolName.value = data.name || schoolName.value;
                     schoolAddress.value = data.address || schoolAddress.value;
+                    letterDesignation.value = data.designation || '';
                     letterPlace.value = data.place || letterPlace.value;
                     updatePreview();
                 }
@@ -92,6 +95,9 @@ document.addEventListener('DOMContentLoaded', () => {
         prevSubhead.textContent = letterSubhead.value.toUpperCase();
         prevSubhead.style.display = letterSubhead.value ? 'block' : 'none';
 
+        prevDesignation.textContent = letterDesignation.value || '';
+        document.querySelector('.paper-footer').style.display = letterDesignation.value ? 'block' : 'none';
+
         // Update Rich Matter Preview
         prevMatter.innerHTML = letterMatter.innerHTML || '[Start typing in Step 2 to see the letter matter here...]';
     }
@@ -123,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Attach listeners for real-time preview
-    [schoolName, schoolCode, schoolAddress, letterPlace, letterDate, letterSubhead].forEach(el => {
+    [schoolName, schoolCode, schoolAddress, letterDesignation, letterPlace, letterDate, letterSubhead].forEach(el => {
         el.addEventListener('input', updatePreview);
     });
 
@@ -144,6 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 name: schoolName.value,
                 address: schoolAddress.value,
                 place: letterPlace.value,
+                designation: letterDesignation.value,
                 lastUpdated: new Date().toISOString()
             });
         }
@@ -179,12 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
     downloadBtn.addEventListener('click', async () => {
         const { jsPDF } = window.jspdf;
 
-        // Simple Validation
-        if (!letterMatter.innerHTML || letterMatter.innerHTML === '<br>') {
-            alert('Please enter the letter matter/content.');
-            letterMatter.focus();
-            return;
-        }
+        // No mandatory fields - allow blank letterhead download as requested.
 
         downloadBtn.textContent = '⏳ Creating...';
         downloadBtn.disabled = true;
@@ -196,29 +198,31 @@ document.addEventListener('DOMContentLoaded', () => {
             const margin = 20;
 
             // 1. Draw HEADER (Sharp Native Text)
-            pdf.setDrawColor(59, 130, 246); // Primary Blue
+            pdf.setDrawColor(0);
             pdf.setLineWidth(1.5);
             pdf.line(margin, 15, pageWidth - margin, 15); // Top bar
 
             pdf.setFont('helvetica', 'bold');
             pdf.setFontSize(22);
+            pdf.setTextColor(0);
             const nameLines = pdf.splitTextToSize(schoolName.value.toUpperCase(), pageWidth - (margin * 2));
             pdf.text(nameLines, pageWidth / 2, 28, { align: 'center' });
 
             let nextY = 36;
             if (schoolCode.value) {
-                pdf.setFontSize(12);
-                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(14); // BIGGER
+                pdf.setFont('helvetica', 'bold'); // BOLD
                 pdf.text(`School Code: ${schoolCode.value}`, pageWidth / 2, nextY, { align: 'center' });
-                nextY += 7;
+                nextY += 8;
             } else { nextY = 32; }
 
             if (schoolAddress.value) {
-                pdf.setFontSize(10);
-                pdf.setTextColor(100);
+                pdf.setFontSize(12); // BIGGER
+                pdf.setFont('helvetica', 'bold'); // BOLD
+                pdf.setTextColor(40); // Darker
                 const addressLines = pdf.splitTextToSize(schoolAddress.value, pageWidth - (margin * 3));
                 pdf.text(addressLines, pageWidth / 2, nextY, { align: 'center' });
-                nextY += (addressLines.length * 4.5);
+                nextY += (addressLines.length * 5);
             }
 
             // Divider Line
@@ -228,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 2. PLACE & DATE
             pdf.setTextColor(0);
-            pdf.setFontSize(11);
+            pdf.setFontSize(12);
             pdf.setFont('helvetica', 'bold');
             if (letterPlace.value) pdf.text(`Place: ${letterPlace.value}`, margin, nextY + 10);
             if (letterDate.value) pdf.text(`Date: ${letterDate.value}`, pageWidth - margin, nextY + 10, { align: 'right' });
@@ -238,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let matterY = subheadY;
             if (letterSubhead.value) {
                 pdf.setFont('helvetica', 'bold');
-                pdf.setFontSize(13);
+                pdf.setFontSize(14);
                 const st = letterSubhead.value.toUpperCase();
                 pdf.text(st, pageWidth / 2, subheadY, { align: 'center' });
                 const tw = pdf.getTextWidth(st);
@@ -246,33 +250,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 matterY = subheadY + 12;
             }
 
-            // 4. RICH TEXT MATTER (High Res Image Capture for Alignment)
-            const matterPrev = document.getElementById('live-prev-matter');
-            // Hide placeholder if any
-            const originalHTML = matterPrev.innerHTML;
-            if (letterMatter.innerText.trim() === "") matterPrev.innerHTML = "";
+            // 4. RICH TEXT MATTER (Native Selectable Text)
+            // This ensures 100% clarity and selectability
+            const maxWidth = pageWidth - (margin * 2);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(11);
+            pdf.setTextColor(0);
 
-            const canvas = await html2canvas(matterPrev, {
-                scale: 4,
-                backgroundColor: null,
-                logging: false,
-                width: matterPrev.offsetWidth,
-                height: matterPrev.scrollHeight
+            // Handle both div-wrapped lines and raw text
+            let contentNodes = Array.from(letterMatter.childNodes);
+            let currentY = matterY;
+
+            contentNodes.forEach(node => {
+                let text = node.textContent || "";
+                if (!text.trim() && node.nodeName === "BR") {
+                    currentY += 6; // Simple line break
+                    return;
+                }
+                if (!text.trim() && node.nodeName !== "DIV" && node.nodeName !== "P") return;
+
+                let align = 'left';
+                if (node.nodeType === 1) { // Element node
+                    align = node.style.textAlign || 'left';
+                }
+
+                const wrappedLines = pdf.splitTextToSize(text, maxWidth);
+                const xPos = align === 'center' ? pageWidth / 2 : (align === 'right' ? pageWidth - margin : margin);
+
+                pdf.text(wrappedLines, xPos, currentY, { align: align });
+                currentY += (wrappedLines.length * 6.5); // Line spacing
             });
 
-            const imgData = canvas.toDataURL('image/png');
-            const imgWidth = pageWidth - (margin * 2);
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            const imgHeight = currentY - matterY; // Pseudo height for signature positioning
 
-            pdf.addImage(imgData, 'PNG', margin, matterY, imgWidth, imgHeight);
-
-            // 5. SIGNATURE (Native Text)
-            const signatureY = Math.max(matterY + imgHeight + 20, pageHeight - 45);
-            pdf.setFontSize(11);
-            pdf.setFont('helvetica', 'bold');
-            pdf.text('Sincerely,', pageWidth - margin - 5, signatureY, { align: 'right' });
-            pdf.text('____________________', pageWidth - margin - 5, signatureY + 16, { align: 'right' });
-            pdf.text('Headmaster / Principal', pageWidth - margin - 5, signatureY + 22, { align: 'right' });
+            // 5. SIGNATURE (Native Text - Conditional)
+            if (letterDesignation.value.trim()) {
+                const signatureY = Math.max(matterY + imgHeight + 20, pageHeight - 45);
+                pdf.setFontSize(12);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('Sincerely,', pageWidth - margin - 5, signatureY, { align: 'right' });
+                pdf.text('____________________', pageWidth - margin - 5, signatureY + 16, { align: 'right' });
+                pdf.text(letterDesignation.value, pageWidth - margin - 5, signatureY + 22, { align: 'right' });
+            }
 
             pdf.save(`${schoolName.value.replace(/[^a-z0-9]/gi, '_')}_Letter.pdf`);
         } catch (err) {
@@ -289,7 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const suggestionsBox = document.getElementById('grammar-suggestions');
 
     grammarBtn.addEventListener('click', async () => {
-        const text = letterMatter.value;
+        const text = letterMatter.innerText;
         if (!text) {
             alert('Please enter some text to check first.');
             return;

@@ -387,7 +387,8 @@ footer {
     text-align: justify;
     white-space: pre-wrap;
     flex-grow: 1;
-    color: #334155;
+    color: #000;
+    font-weight: 500;
     min-height: 150px;
 }
 

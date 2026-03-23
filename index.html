@@ -56,6 +56,16 @@
                         rows="2"></textarea>
                 </div>
                 <div class="input-field">
+                    <label for="letter-designation">Designation</label>
+                    <input type="text" id="letter-designation" list="designations"
+                        placeholder="Select or type designation">
+                    <datalist id="designations">
+                        <option value="Headmaster"></option>
+                        <option value="Headmistress"></option>
+                        <option value="Principal"></option>
+                    </datalist>
+                </div>
+                <div class="input-field">
                     <label for="letter-place">Place</label>
                     <input type="text" id="letter-place" placeholder="e.g. Kozhikode">
                 </div>
@@ -172,7 +182,7 @@
                     </div>
                     <div class="paper-footer">
                         <p>Sincerely,</p>
-                        <p><strong>Headmaster / Principal</strong></p>
+                        <p><strong id="live-prev-designation">Headmaster / Principal</strong></p>
                     </div>
                 </div>
             </div>
