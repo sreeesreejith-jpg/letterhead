@@ -26,9 +26,41 @@ document.addEventListener('DOMContentLoaded', () => {
     const prevSubhead = document.getElementById('live-prev-subhead');
     const prevMatter = document.getElementById('live-prev-matter');
 
+    // 1b. Firebase Initialization (New Isolated Project)
+    const firebaseConfig = {
+        apiKey: "AIzaSyBnSaFk8T72ZFNH1oiC7AsuAh8EsuXFlwo",
+        authDomain: "letterhead-55053.firebaseapp.com",
+        databaseURL: "https://letterhead-55053-default-rtdb.firebaseio.com",
+        projectId: "letterhead-55053",
+        storageBucket: "letterhead-55053.firebasestorage.app",
+        messagingSenderId: "82009825299",
+        appId: "1:82009825299:web:72cb5d0ab0113ac0629fe6"
+    };
+
+    if (typeof firebase !== 'undefined') {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const database = (typeof firebase !== 'undefined') ? firebase.database() : null;
+
     // 2. Initial Date Setup & Formatting State
     const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
     letterDate.value = today;
+
+    // Auto-fetch data by School Code
+    schoolCode.addEventListener('blur', () => {
+        const code = schoolCode.value.trim();
+        if (code && database) {
+            database.ref('schools/' + code).once('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    schoolName.value = data.name || schoolName.value;
+                    schoolAddress.value = data.address || schoolAddress.value;
+                    letterPlace.value = data.place || letterPlace.value;
+                    updatePreview();
+                }
+            });
+        }
+    });
 
     // Formatting Tool Listeners (These are now handled by execCommand directly on letterMatter)
     // const alignBtns = document.querySelectorAll('.align-btn');
@@ -104,6 +136,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. Logic for Go Button
     goBtn.addEventListener('click', () => {
         // Validation (Everything is now optional!)
+
+        // Auto-Save/Update to Database if Code is provided
+        const code = schoolCode.value.trim();
+        if (code && database) {
+            database.ref('schools/' + code).update({
+                name: schoolName.value,
+                address: schoolAddress.value,
+                place: letterPlace.value,
+                lastUpdated: new Date().toISOString()
+            });
+        }
 
         // Show Section 2 with animation
         step2.style.display = 'block';
