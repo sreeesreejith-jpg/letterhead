@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instant Letterhead Maker | School Apps</title>
+    <meta name="description" content="Create professional school letterheads instantly.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Local PDF Libraries -->
+    <script src="../nithara/jspdf.umd.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <a href="../index.html" class="home-icon" title="Go Home">🏠</a>
+                <div class="header-text">
+                    <h1>Instant Letterhead Maker</h1>
+                    <p class="subtitle">Create professional school documents in seconds</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Step 1: School Information -->
+        <section class="card input-section" id="step1">
+            <div class="card-header">
+                <h2><span class="step-num">1</span> School Details</h2>
+            </div>
+            <div class="input-grid">
+                <div class="input-field">
+                    <label for="school-code">School Code</label>
+                    <input type="text" id="school-code" placeholder="e.g. 12045" autocomplete="off">
+                </div>
+                <div class="input-field full-width">
+                    <label for="school-name">School Name</label>
+                    <input type="text" id="school-name" placeholder="Enter full school name" autocomplete="off">
+                </div>
+                <div class="input-field full-width">
+                    <label for="school-address">Address</label>
+                    <textarea id="school-address" placeholder="Enter school address, city, district, PIN"
+                        rows="2"></textarea>
+                </div>
+                <div class="input-field">
+                    <label for="letter-place">Place</label>
+                    <input type="text" id="letter-place" placeholder="e.g. Kozhikode">
+                </div>
+                <div class="input-field">
+                    <label for="letter-date">Date</label>
+                    <input type="date" id="letter-date">
+                </div>
+            </div>
+            <div class="button-row">
+                <button id="go-btn" class="primary-btn pulse">
+                    <span>Generate Letterhead Area</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m9 18 6-6-6-6" />
+                    </svg>
+                </button>
+            </div>
+        </section>
+
+        <!-- Step 2: Letter Content (Hidden initially) -->
+        <section class="card content-section" id="step2" style="display: none; opacity: 0;">
+            <div class="card-header highlight">
+                <h2><span class="step-num">2</span> Letter Matter</h2>
+            </div>
+            <div class="input-field full-width">
+                <label for="letter-subhead">Subheading (Subject/Title)</label>
+                <input type="text" id="letter-subhead" placeholder="e.g. DUTY CERTIFICATE" autocomplete="off">
+            </div>
+            <div class="input-field full-width matter-field">
+                <label for="letter-matter">Main Content / Matter</label>
+                <textarea id="letter-matter" placeholder="Type your letter content here..." rows="12"></textarea>
+            </div>
+
+            <!-- Live Preview Area -->
+            <div class="preview-card-container">
+                <h3 class="preview-title">Paper Preview</h3>
+                <div id="live-paper-preview" class="paper-page">
+                    <div class="paper-header">
+                        <h1 id="live-prev-school-name">[School Name]</h1>
+                        <p id="live-prev-school-code">School Code: [Code]</p>
+                        <p id="live-prev-school-address">[Full Address]</p>
+                    </div>
+                    <div class="paper-meta">
+                        <span id="live-prev-place">Place: [Place]</span>
+                        <span id="live-prev-date">Date: [Date]</span>
+                    </div>
+                    <div id="live-prev-subhead" class="paper-subhead"></div>
+                    <div id="live-prev-matter" class="paper-matter">
+                        [Start typing in Step 2 to see the letter matter here...]
+                    </div>
+                    <div class="paper-footer">
+                        <p>Sincerely,</p>
+                        <p><strong>Headmaster / Principal</strong></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-grid">
+                <button id="download-pdf-btn" class="download-btn">
+                    <span>📥 Download PDF</span>
+                </button>
+                <button id="reset-btn" class="reset-btn">
+                    <span>🔄 Start Over</span>
+                </button>
+            </div>
+        </section>
+
+        <footer>
+            <p>&copy; 2026 Nithara Apps | Professional Tool</p>
+        </footer>
+    </div>
+
+    <!-- Hidden Preview for Canvas (Optional but helps in complex layouts) -->
+    <div id="pdf-preview-template"
+        style="position: absolute; left: -9999px; top: -9999px; width: 595px; background: white; color: black; padding: 40px; font-family: 'serif';">
+        <div id="preview-header"
+            style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
+            <h1 id="preview-school-name"
+                style="margin: 0; font-size: 24pt; font-weight: bold; text-transform: uppercase;"></h1>
+            <p id="preview-school-code" style="margin: 5px 0; font-size: 12pt; font-weight: bold;"></p>
+            <p id="preview-school-address" style="margin: 0; font-size: 11pt;"></p>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 30px; font-size: 11pt;">
+            <p>Place: <span id="preview-place"></span></p>
+            <p>Date: <span id="preview-date"></span></p>
+        </div>
+        <div id="preview-matter"
+            style="font-size: 12pt; min-height: 400px; line-height: 1.6; text-align: justify; white-space: pre-wrap;">
+        </div>
+        <div style="margin-top: 60px; text-align: right;">
+            <p style="margin-bottom: 40px;">Sincerely,</p>
+            <p style="font-weight: bold;">Headmaster / Principal</p>
+        </div>
+    </div>
+
+    <script src="script.js?v=1.1"></script>
+</body>
+
+</html>
