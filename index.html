@@ -57,17 +57,11 @@
                 </div>
                 <div class="input-field">
                     <label for="letter-designation">Designation</label>
-                    <div class="designation-wrapper">
-                        <select id="letter-designation-select">
-                            <option value="Headmaster">Headmaster</option>
-                            <option value="Headmistress">Headmistress</option>
-                            <option value="Principal">Principal</option>
-                            <option value="Other">Other...</option>
-                        </select>
-                        <input type="text" id="letter-designation-custom" placeholder="Type custom designation" 
-                            style="display: none;">
-                        <!-- This hidden input stores the final value for consistency with script.js -->
-                        <input type="hidden" id="letter-designation">
+                    <input type="text" id="letter-designation" placeholder="Type or select below" autocomplete="off">
+                    <div class="designation-chips">
+                        <button type="button" class="chip" data-value="Headmaster">Headmaster</button>
+                        <button type="button" class="chip" data-value="Headmistress">Headmistress</button>
+                        <button type="button" class="chip" data-value="Principal">Principal</button>
                     </div>
                 </div>
                 <div class="input-field">

@@ -14,13 +14,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const schoolAddress = document.getElementById('school-address');
     const letterMatter = document.getElementById('letter-matter');
     const letterSubhead = document.getElementById('letter-subhead');
-    const letterDesignation = document.getElementById('letter-designation'); // Added designation input
     const letterPlace = document.getElementById('letter-place');
     const letterDate = document.getElementById('letter-date');
+    const letterDesignation = document.getElementById('letter-designation');
 
-    // New designation select elements
-    const designationSelect = document.getElementById('letter-designation-select');
-    const designationCustom = document.getElementById('letter-designation-custom');
+    // Designation handle
+    const designationChips = document.querySelectorAll('.chip');
 
     // Preview elements
     const prevName = document.getElementById('live-prev-school-name');
@@ -61,40 +60,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data) {
                     schoolName.value = data.name || schoolName.value;
                     schoolAddress.value = data.address || schoolAddress.value;
-
-                    // Handle designation sync from database
-                    const savedDesignation = data.designation || '';
-                    if (['Headmaster', 'Headmistress', 'Principal'].includes(savedDesignation)) {
-                        designationSelect.value = savedDesignation;
-                        designationCustom.style.display = 'none';
-                    } else if (savedDesignation) {
-                        designationSelect.value = 'Other';
-                        designationCustom.value = savedDesignation;
-                        designationCustom.style.display = 'block';
-                    }
-                    letterDesignation.value = savedDesignation;
-
+                    letterDesignation.value = data.designation || '';
                     letterPlace.value = data.place || letterPlace.value;
+                    syncChips();
                     updatePreview();
                 }
             });
         }
     });
 
-    // Handle Designation Selection Switch
-    function updateDesignationValue() {
-        if (designationSelect.value === 'Other') {
-            designationCustom.style.display = 'block';
-            letterDesignation.value = designationCustom.value;
-        } else {
-            designationCustom.style.display = 'none';
-            letterDesignation.value = designationSelect.value;
-        }
-        updatePreview();
+    // Handle Designation Chips
+    function syncChips() {
+        designationChips.forEach(chip => {
+            if (chip.getAttribute('data-value') === letterDesignation.value) {
+                chip.classList.add('active');
+            } else {
+                chip.classList.remove('active');
+            }
+        });
     }
 
-    designationSelect.addEventListener('change', updateDesignationValue);
-    designationCustom.addEventListener('input', updateDesignationValue);
+    designationChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+            letterDesignation.value = chip.getAttribute('data-value');
+            syncChips();
+            updatePreview();
+        });
+    });
+
+    // If user types manually, update/clear chip highlights
+    letterDesignation.addEventListener('input', () => {
+        syncChips();
+    });
 
     // Formatting Tool Listeners (These are now handled by execCommand directly on letterMatter)
     // const alignBtns = document.querySelectorAll('.align-btn');
@@ -168,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
     letterMatter.addEventListener('input', updatePreview);
 
     // Initial call
-    updateDesignationValue();
+    syncChips();
     updatePreview();
 
     // 3. Logic for Go Button
