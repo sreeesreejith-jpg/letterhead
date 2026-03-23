@@ -18,6 +18,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const letterPlace = document.getElementById('letter-place');
     const letterDate = document.getElementById('letter-date');
 
+    // New designation select elements
+    const designationSelect = document.getElementById('letter-designation-select');
+    const designationCustom = document.getElementById('letter-designation-custom');
+
     // Preview elements
     const prevName = document.getElementById('live-prev-school-name');
     const prevCode = document.getElementById('live-prev-school-code');
@@ -57,13 +61,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data) {
                     schoolName.value = data.name || schoolName.value;
                     schoolAddress.value = data.address || schoolAddress.value;
-                    letterDesignation.value = data.designation || '';
+
+                    // Handle designation sync from database
+                    const savedDesignation = data.designation || '';
+                    if (['Headmaster', 'Headmistress', 'Principal'].includes(savedDesignation)) {
+                        designationSelect.value = savedDesignation;
+                        designationCustom.style.display = 'none';
+                    } else if (savedDesignation) {
+                        designationSelect.value = 'Other';
+                        designationCustom.value = savedDesignation;
+                        designationCustom.style.display = 'block';
+                    }
+                    letterDesignation.value = savedDesignation;
+
                     letterPlace.value = data.place || letterPlace.value;
                     updatePreview();
                 }
             });
         }
     });
+
+    // Handle Designation Selection Switch
+    function updateDesignationValue() {
+        if (designationSelect.value === 'Other') {
+            designationCustom.style.display = 'block';
+            letterDesignation.value = designationCustom.value;
+        } else {
+            designationCustom.style.display = 'none';
+            letterDesignation.value = designationSelect.value;
+        }
+        updatePreview();
+    }
+
+    designationSelect.addEventListener('change', updateDesignationValue);
+    designationCustom.addEventListener('input', updateDesignationValue);
 
     // Formatting Tool Listeners (These are now handled by execCommand directly on letterMatter)
     // const alignBtns = document.querySelectorAll('.align-btn');
@@ -137,6 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
     letterMatter.addEventListener('input', updatePreview);
 
     // Initial call
+    updateDesignationValue();
     updatePreview();
 
     // 3. Logic for Go Button
