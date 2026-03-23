@@ -575,3 +575,64 @@ footer {
     color: #000;
     letter-spacing: 1px;
 }
+
+/* --- Mobile Responsiveness (Max Space) --- */
+@media (max-width: 768px) {
+    .container {
+        padding: 0.75rem;
+    }
+
+    header {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+    }
+
+    header h1 {
+        font-size: 1.75rem;
+    }
+
+    .card {
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .input-grid {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+    }
+
+    .input-field.full-width {
+        grid-column: span 1;
+    }
+
+    .formatting-toolbar {
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        justify-content: flex-start;
+        padding: 0.75rem;
+    }
+
+    .tool-separator {
+        display: none;
+        /* Drop separators to save space */
+    }
+
+    .rich-editor {
+        padding: 1rem;
+        min-height: 250px;
+    }
+
+    .download-btn {
+        width: 100%;
+        padding: 1.25rem;
+    }
+
+    .paper-page {
+        padding: 1rem;
+        margin: 0 -0.5rem;
+        /* Slight overflow to give more paper space */
+        width: calc(100% + 1rem);
+        border-radius: 0;
+        box-shadow: none;
+    }
+}
