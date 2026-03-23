@@ -418,6 +418,153 @@ footer {
     }
 }
 
+.field-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.mini-btn {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--primary);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    padding: 0.4rem 0.8rem;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.mini-btn:hover {
+    background: var(--primary);
+    color: white;
+}
+
+.suggestions-box {
+    margin-top: 1rem;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px dashed var(--success);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    font-size: 0.85rem;
+}
+
+.suggestion-item {
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+    color: var(--text-main);
+}
+
+.suggestion-item:last-child {
+    margin-bottom: 0;
+}
+
+.suggestion-item strong {
+    color: #ef4444;
+    /* Error red */
+    text-decoration: underline dashed;
+}
+
+.suggestion-item .fix {
+    color: var(--success);
+    font-weight: 700;
+}
+
+/* Formatting Toolbar */
+.formatting-toolbar {
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem 0.75rem 0 0;
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: none;
+}
+
+.tool-group {
+    display: flex;
+    gap: 2px;
+}
+
+.tool-btn {
+    background: transparent;
+    color: var(--text-muted);
+    border: none;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tool-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+}
+
+.tool-btn.active {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+}
+
+.tool-separator {
+    width: 1px;
+    height: 20px;
+    background: var(--border-color);
+    margin: 0 0.25rem;
+}
+
+.tool-select {
+    background: #0f172a;
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.4rem;
+    font-size: 0.8rem;
+    outline: none;
+}
+
+/* Updated Rich Editor matching toolbar */
+.rich-editor {
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid var(--border-color);
+    border-radius: 0 0 0.75rem 0.75rem;
+    padding: 1.5rem;
+    min-height: 300px;
+    color: var(--text-main);
+    outline: none;
+    line-height: 1.6;
+    font-size: 1rem;
+    overflow-y: auto;
+}
+
+.rich-editor:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.rich-editor[placeholder]:empty:before {
+    content: attr(placeholder);
+    color: var(--text-muted);
+}
+
+.tool-color {
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background: #0f172a;
+    cursor: pointer;
+    padding: 2px;
+}
+
 .paper-subhead {
     text-align: center;
     font-weight: 800;

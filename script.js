@@ -26,41 +26,84 @@ document.addEventListener('DOMContentLoaded', () => {
     const prevSubhead = document.getElementById('live-prev-subhead');
     const prevMatter = document.getElementById('live-prev-matter');
 
-    // 2. Initial Date Setup & Preview Sync
-    const today = new Date().toISOString().split('T')[0];
+    // 2. Initial Date Setup & Formatting State
+    const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
     letterDate.value = today;
 
-    function updatePreview() {
-        prevName.textContent = schoolName.value || '[School Name]';
-        prevCode.textContent = schoolCode.value ? `School Code: ${schoolCode.value}` : 'School Code: [Code]';
-        prevAddress.textContent = schoolAddress.value || '[Full Address]';
-        prevPlace.textContent = `Place: ${letterPlace.value || '[Place]'}`;
+    // Formatting Tool Listeners (These are now handled by execCommand directly on letterMatter)
+    // const alignBtns = document.querySelectorAll('.align-btn');
+    // const spacingSelect = document.getElementById('line-spacing');
 
-        const d = letterDate.value;
-        const formatted = d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '[Date]';
-        prevDate.textContent = `Date: ${formatted}`;
+    // alignBtns.forEach(btn => {
+    //     btn.addEventListener('click', () => {
+    //         alignBtns.forEach(b => b.classList.remove('active'));
+    //         btn.classList.add('active');
+    //         currentAlign = btn.getAttribute('data-align');
+    //         updatePreview();
+    //     });
+    // });
+
+    // spacingSelect.addEventListener('change', (e) => {
+    //     currentLineSpacing = parseFloat(e.target.value);
+    //     updatePreview();
+    // });
+
+    function updatePreview() {
+        prevName.textContent = schoolName.value ? schoolName.value : '';
+        prevCode.textContent = schoolCode.value ? `School Code: ${schoolCode.value}` : '';
+        prevAddress.textContent = schoolAddress.value ? schoolAddress.value : '';
+
+        // Only show Place/Date labels if there's a value
+        prevPlace.textContent = letterPlace.value ? `Place: ${letterPlace.value}` : '';
+        prevDate.textContent = letterDate.value ? `Date: ${letterDate.value}` : '';
 
         prevSubhead.textContent = letterSubhead.value.toUpperCase();
         prevSubhead.style.display = letterSubhead.value ? 'block' : 'none';
 
-        prevMatter.textContent = letterMatter.value || '[Start typing in Step 2 to see the letter matter here...]';
+        // Update Rich Matter Preview
+        prevMatter.innerHTML = letterMatter.innerHTML || '[Start typing in Step 2 to see the letter matter here...]';
     }
 
+    // Rich Text Toolbar Logic
+    const richTools = document.querySelectorAll('.rich-tool');
+    const richSelects = document.querySelectorAll('.rich-tool-select');
+    const colorPicker = document.getElementById('text-color');
+
+    richTools.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const command = btn.getAttribute('data-command');
+            document.execCommand(command, false, null);
+            updatePreview();
+        });
+    });
+
+    richSelects.forEach(select => {
+        select.addEventListener('change', () => {
+            const command = select.getAttribute('data-command');
+            document.execCommand(command, false, select.value);
+            updatePreview();
+        });
+    });
+
+    colorPicker.addEventListener('input', () => {
+        document.execCommand('foreColor', false, colorPicker.value);
+        updatePreview();
+    });
+
     // Attach listeners for real-time preview
-    [schoolName, schoolCode, schoolAddress, letterPlace, letterDate, letterSubhead, letterMatter].forEach(el => {
+    [schoolName, schoolCode, schoolAddress, letterPlace, letterDate, letterSubhead].forEach(el => {
         el.addEventListener('input', updatePreview);
     });
+
+    // Rich editor listener
+    letterMatter.addEventListener('input', updatePreview);
 
     // Initial call
     updatePreview();
 
     // 3. Logic for Go Button
     goBtn.addEventListener('click', () => {
-        // Validation
-        if (!schoolName.value || !schoolCode.value || !schoolAddress.value || !letterPlace.value || !letterDate.value) {
-            alert('Please fill in all school details including Place and Date.');
-            return;
-        }
+        // Validation (Everything is now optional!)
 
         // Show Section 2 with animation
         step2.style.display = 'block';
@@ -79,7 +122,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (confirm('Are you sure you want to clear all fields and start over?')) {
             const inputs = document.querySelectorAll('input, textarea');
             inputs.forEach(input => input.value = '');
+            letterMatter.innerHTML = ''; // Clear contenteditable div
             letterDate.value = today;
+            updatePreview(); // Ensure preview clears too
             step2.style.display = 'none';
             goBtn.classList.add('pulse');
             goBtn.querySelector('span').textContent = 'Generate Letterhead Area';
@@ -87,118 +132,171 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 5. PDF Generation Logic
-    downloadBtn.addEventListener('click', () => {
+    // 5. Professional PDF Generation (High Fidelity Hybrid)
+    downloadBtn.addEventListener('click', async () => {
         const { jsPDF } = window.jspdf;
 
         // Simple Validation
-        if (!letterMatter.value) {
+        if (!letterMatter.innerHTML || letterMatter.innerHTML === '<br>') {
             alert('Please enter the letter matter/content.');
             letterMatter.focus();
             return;
         }
 
-        // Create PDF (A4 size)
-        const doc = new jsPDF({
-            orientation: 'portrait',
-            unit: 'mm',
-            format: 'a4'
-        });
+        downloadBtn.textContent = '⏳ Creating...';
+        downloadBtn.disabled = true;
 
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const pageHeight = doc.internal.pageSize.getHeight();
-        const margin = 20;
+        try {
+            const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const margin = 20;
 
-        // --- DRAW HEADER (BEAUTIFULLY) ---
-        // Fill a subtle top bar or border? Let's go simple but elegant.
-        doc.setDrawColor(59, 130, 246); // Primary Blue
-        doc.setLineWidth(1.5);
-        doc.line(margin, 10, pageWidth - margin, 10); // Top line
+            // 1. Draw HEADER (Sharp Native Text)
+            pdf.setDrawColor(59, 130, 246); // Primary Blue
+            pdf.setLineWidth(1.5);
+            pdf.line(margin, 15, pageWidth - margin, 15); // Top bar
 
-        // School Name
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(22);
-        const nameLines = doc.splitTextToSize(schoolName.value.toUpperCase(), pageWidth - (margin * 2));
-        doc.text(nameLines, pageWidth / 2, 25, { align: 'center' });
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(22);
+            const nameLines = pdf.splitTextToSize(schoolName.value.toUpperCase(), pageWidth - (margin * 2));
+            pdf.text(nameLines, pageWidth / 2, 28, { align: 'center' });
 
-        // School Code
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`School Code: ${schoolCode.value}`, pageWidth / 2, 33, { align: 'center' });
+            let nextY = 36;
+            if (schoolCode.value) {
+                pdf.setFontSize(12);
+                pdf.setFont('helvetica', 'normal');
+                pdf.text(`School Code: ${schoolCode.value}`, pageWidth / 2, nextY, { align: 'center' });
+                nextY += 7;
+            } else { nextY = 32; }
 
-        // Address
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        const addressLines = doc.splitTextToSize(schoolAddress.value, pageWidth - (margin * 2));
-        doc.text(addressLines, pageWidth / 2, 40, { align: 'center' });
+            if (schoolAddress.value) {
+                pdf.setFontSize(10);
+                pdf.setTextColor(100);
+                const addressLines = pdf.splitTextToSize(schoolAddress.value, pageWidth - (margin * 3));
+                pdf.text(addressLines, pageWidth / 2, nextY, { align: 'center' });
+                nextY += (addressLines.length * 4.5);
+            }
 
-        // Header Bottom Divider
-        doc.setDrawColor(0);
-        doc.setLineWidth(0.5);
-        const headerEndHeight = 45 + (addressLines.length * 4);
-        doc.line(margin, headerEndHeight, pageWidth - margin, headerEndHeight);
+            // Divider Line
+            pdf.setDrawColor(0);
+            pdf.setLineWidth(0.5);
+            pdf.line(margin, nextY, pageWidth - margin, nextY);
 
-        // --- PLACE & DATE ---
-        doc.setTextColor(0);
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
-        const formattedDate = new Date(letterDate.value).toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric'
-        });
+            // 2. PLACE & DATE
+            pdf.setTextColor(0);
+            pdf.setFontSize(11);
+            pdf.setFont('helvetica', 'bold');
+            if (letterPlace.value) pdf.text(`Place: ${letterPlace.value}`, margin, nextY + 10);
+            if (letterDate.value) pdf.text(`Date: ${letterDate.value}`, pageWidth - margin, nextY + 10, { align: 'right' });
 
-        doc.text(`Place: ${letterPlace.value || 'Not Specified'}`, margin, headerEndHeight + 12);
-        doc.text(`Date: ${formattedDate}`, pageWidth - margin, headerEndHeight + 12, { align: 'right' });
+            // 3. SUBHEADING
+            let subheadY = nextY + 22;
+            let matterY = subheadY;
+            if (letterSubhead.value) {
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(13);
+                const st = letterSubhead.value.toUpperCase();
+                pdf.text(st, pageWidth / 2, subheadY, { align: 'center' });
+                const tw = pdf.getTextWidth(st);
+                pdf.line(pageWidth / 2 - (tw / 2), subheadY + 1.2, pageWidth / 2 + (tw / 2), subheadY + 1.2);
+                matterY = subheadY + 12;
+            }
 
-        // --- SUBHEADING ---
-        const subheadY = headerEndHeight + 25;
-        let matterY = subheadY + 10; // Default start for matter
+            // 4. RICH TEXT MATTER (High Res Image Capture for Alignment)
+            const matterPrev = document.getElementById('live-prev-matter');
+            // Hide placeholder if any
+            const originalHTML = matterPrev.innerHTML;
+            if (letterMatter.innerText.trim() === "") matterPrev.innerHTML = "";
 
-        if (letterSubhead.value) {
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(13);
-            const subheadText = letterSubhead.value.toUpperCase();
-            doc.text(subheadText, pageWidth / 2, subheadY, { align: 'center' });
+            const canvas = await html2canvas(matterPrev, {
+                scale: 4,
+                backgroundColor: null,
+                logging: false,
+                width: matterPrev.offsetWidth,
+                height: matterPrev.scrollHeight
+            });
 
-            // Underline for subhead
-            const textWidth = doc.getTextWidth(subheadText);
-            doc.setLineWidth(0.5);
-            doc.line(pageWidth / 2 - (textWidth / 2), subheadY + 1.5, pageWidth / 2 + (textWidth / 2), subheadY + 1.5);
+            const imgData = canvas.toDataURL('image/png');
+            const imgWidth = pageWidth - (margin * 2);
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-            matterY = subheadY + 15; // Push matter down if subhead exists
+            pdf.addImage(imgData, 'PNG', margin, matterY, imgWidth, imgHeight);
+
+            // 5. SIGNATURE (Native Text)
+            const signatureY = Math.max(matterY + imgHeight + 20, pageHeight - 45);
+            pdf.setFontSize(11);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Sincerely,', pageWidth - margin - 5, signatureY, { align: 'right' });
+            pdf.text('____________________', pageWidth - margin - 5, signatureY + 16, { align: 'right' });
+            pdf.text('Headmaster / Principal', pageWidth - margin - 5, signatureY + 22, { align: 'right' });
+
+            pdf.save(`${schoolName.value.replace(/[^a-z0-9]/gi, '_')}_Letter.pdf`);
+        } catch (err) {
+            console.error(err);
+            alert('PDF Creation Error');
+        } finally {
+            downloadBtn.textContent = '📥 Download PDF';
+            downloadBtn.disabled = false;
         }
-
-        // --- CONTENT / MATTER ---
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(12);
-        const matterText = letterMatter.value;
-        const matterLines = doc.splitTextToSize(matterText, pageWidth - (margin * 2));
-
-        doc.text(matterLines, margin, matterY, { align: 'justify', maxWidth: pageWidth - (margin * 2) });
-
-        // --- SIGNATURE AREA ---
-        const contentBottomY = matterY + (matterLines.length * 6);
-        const signatureY = Math.max(contentBottomY + 30, pageHeight - 50); // Minimum 50mm from bottom
-
-        doc.setFont('helvetica', 'bold');
-        doc.text('Sincerely,', pageWidth - margin - 20, signatureY, { align: 'center' });
-
-        doc.setFontSize(11);
-        doc.text('____________________', pageWidth - margin - 20, signatureY + 15, { align: 'center' });
-        doc.text('Headmaster / Principal', pageWidth - margin - 20, signatureY + 22, { align: 'center' });
-
-        // Footer line
-        doc.setFontSize(8);
-        doc.setTextColor(150);
-        doc.text('Generated by Nithara Letterhead Maker', pageWidth / 2, pageHeight - 10, { align: 'center' });
-
-        // --- SAVE THE PDF ---
-        const fileName = `${schoolName.value.replace(/[^a-z0-9]/gi, '_')}_Letter.pdf`;
-        doc.save(fileName);
     });
 
-    // 6. Keyboard shortcuts (Optional)
+    // 6. Grammar & Spelling Check
+    const grammarBtn = document.getElementById('check-grammar-btn');
+    const suggestionsBox = document.getElementById('grammar-suggestions');
+
+    grammarBtn.addEventListener('click', async () => {
+        const text = letterMatter.value;
+        if (!text) {
+            alert('Please enter some text to check first.');
+            return;
+        }
+
+        grammarBtn.textContent = '⏳ Checking...';
+        grammarBtn.disabled = true;
+        suggestionsBox.innerHTML = '';
+        suggestionsBox.style.display = 'none';
+
+        try {
+            const response = await fetch('https://api.languagetool.org/v2/check', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({
+                    text: text,
+                    language: 'en-US'
+                })
+            });
+
+            const data = await response.json();
+            const matches = data.matches;
+
+            if (matches.length === 0) {
+                suggestionsBox.innerHTML = '<p class="suggestion-item">✅ Grammar and spelling look great!</p>';
+            } else {
+                suggestionsBox.innerHTML = '<p class="suggestion-item"><strong>Suggestions found:</strong></p>';
+                matches.forEach(match => {
+                    const error = text.substring(match.offset, match.offset + match.length);
+                    const fix = match.replacements.length > 0 ? match.replacements[0].value : 'no suggestion';
+
+                    const div = document.createElement('div');
+                    div.className = 'suggestion-item';
+                    div.innerHTML = `Found: "<strong>${error}</strong>" - Try: <span class="fix">${fix}</span> (${match.message})`;
+                    suggestionsBox.appendChild(div);
+                });
+            }
+            suggestionsBox.style.display = 'block';
+        } catch (error) {
+            console.error('Grammar check failed:', error);
+            alert('Could not check grammar at this time. Please check your internet connection.');
+        } finally {
+            grammarBtn.textContent = '✨ Check Grammar';
+            grammarBtn.disabled = false;
+        }
+    });
+
+    // 7. Keyboard shortcuts (Optional)
     document.addEventListener('keydown', (e) => {
         if (e.ctrlKey && e.key === 'p') {
             e.preventDefault();
