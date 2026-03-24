@@ -390,6 +390,7 @@ footer {
     color: #000;
     font-weight: 500;
     min-height: 150px;
+    font-family: 'Noto Sans Malayalam', 'Manjari', serif;
 }
 
 .paper-footer {
@@ -544,6 +545,7 @@ footer {
     line-height: 1.6;
     font-size: 1rem;
     overflow-y: auto;
+    font-family: 'Noto Sans Malayalam', 'Manjari', serif;
 }
 
 .rich-editor:focus {

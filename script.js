@@ -279,36 +279,75 @@ document.addEventListener('DOMContentLoaded', () => {
                 matterY = subheadY + 12;
             }
 
-            // 4. RICH TEXT MATTER (Native Selectable Text)
-            // This ensures 100% clarity and selectability
+            // 4. RICH TEXT MATTER (Rendered as Image for Unicode/Malayalam support)
             const maxWidth = pageWidth - (margin * 2);
-            pdf.setFont('helvetica', 'normal');
-            pdf.setFontSize(11);
-            pdf.setTextColor(0);
-
-            // Handle both div-wrapped lines and raw text
-            let contentNodes = Array.from(letterMatter.childNodes);
             let currentY = matterY;
 
-            contentNodes.forEach(node => {
-                let text = node.textContent || "";
-                if (!text.trim() && node.nodeName === "BR") {
-                    currentY += 6; // Simple line break
-                    return;
-                }
-                if (!text.trim() && node.nodeName !== "DIV" && node.nodeName !== "P") return;
+            // Create a temporary off-screen container that mirrors the preview styling
+            const tempContainer = document.createElement('div');
+            tempContainer.style.cssText = `
+                position: absolute; left: -9999px; top: -9999px;
+                width: ${maxWidth * 3.78}px;
+                background: white; color: black;
+                font-family: 'Noto Sans Malayalam', 'Manjari', 'Rachana', sans-serif;
+                font-size: 14px; line-height: 1.8;
+                padding: 10px; box-sizing: border-box;
+                text-align: justify;
+            `;
+            tempContainer.innerHTML = letterMatter.innerHTML || '';
+            document.body.appendChild(tempContainer);
 
-                let align = 'left';
-                if (node.nodeType === 1) { // Element node
-                    align = node.style.textAlign || 'left';
-                }
-
-                const wrappedLines = pdf.splitTextToSize(text, maxWidth);
-                const xPos = align === 'center' ? pageWidth / 2 : (align === 'right' ? pageWidth - margin : margin);
-
-                pdf.text(wrappedLines, xPos, currentY, { align: align });
-                currentY += (wrappedLines.length * 6.5); // Line spacing
+            // Render the matter content using html2canvas for perfect Unicode rendering
+            const matterCanvas = await html2canvas(tempContainer, {
+                scale: 3, // High DPI for sharp text
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                logging: false,
             });
+
+            document.body.removeChild(tempContainer);
+
+            // Calculate dimensions to fit within PDF page width
+            const matterImgWidth = maxWidth;
+            const matterImgHeight = (matterCanvas.height / matterCanvas.width) * matterImgWidth;
+            const matterImgData = matterCanvas.toDataURL('image/png');
+
+            // Handle multi-page if content is too long
+            const availableHeight = pageHeight - matterY - 10;
+            if (matterImgHeight <= availableHeight) {
+                pdf.addImage(matterImgData, 'PNG', margin, currentY, matterImgWidth, matterImgHeight);
+                currentY += matterImgHeight;
+            } else {
+                // Multi-page: slice the canvas
+                const pxPerMm = matterCanvas.width / matterImgWidth;
+                let srcY = 0;
+                let remainingImgHeight = matterImgHeight;
+                let isFirstPage = true;
+
+                while (remainingImgHeight > 0) {
+                    const sliceAvailableHeight = isFirstPage ? availableHeight : (pageHeight - margin * 2);
+                    const sliceHeight = Math.min(remainingImgHeight, sliceAvailableHeight);
+                    const slicePxHeight = sliceHeight * pxPerMm;
+
+                    // Create a slice canvas
+                    const sliceCanvas = document.createElement('canvas');
+                    sliceCanvas.width = matterCanvas.width;
+                    sliceCanvas.height = slicePxHeight;
+                    const sliceCtx = sliceCanvas.getContext('2d');
+                    sliceCtx.drawImage(matterCanvas, 0, srcY, matterCanvas.width, slicePxHeight, 0, 0, matterCanvas.width, slicePxHeight);
+
+                    const sliceData = sliceCanvas.toDataURL('image/png');
+                    const yPos = isFirstPage ? currentY : margin;
+
+                    if (!isFirstPage) pdf.addPage();
+                    pdf.addImage(sliceData, 'PNG', margin, yPos, matterImgWidth, sliceHeight);
+
+                    srcY += slicePxHeight;
+                    remainingImgHeight -= sliceHeight;
+                    currentY = yPos + sliceHeight;
+                    isFirstPage = false;
+                }
+            }
 
             const imgHeight = currentY - matterY; // Pseudo height for signature positioning
 
