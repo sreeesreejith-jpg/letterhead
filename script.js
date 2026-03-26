@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updatePreview() {
         prevName.textContent = schoolName.value ? schoolName.value : '';
-        prevCode.textContent = schoolCode.value ? `School Code: ${schoolCode.value}` : '';
+        prevCode.textContent = schoolCode.value ? `Code: ${schoolCode.value}` : '';
         prevAddress.textContent = schoolAddress.value ? schoolAddress.value : '';
 
         // Only show Place/Date labels if there's a value
@@ -241,7 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (schoolCode.value) {
                 pdf.setFontSize(14); // BIGGER
                 pdf.setFont('helvetica', 'bold'); // BOLD
-                pdf.text(`School Code: ${schoolCode.value}`, pageWidth / 2, nextY, { align: 'center' });
+                pdf.text(`Code: ${schoolCode.value}`, pageWidth / 2, nextY, { align: 'center' });
                 nextY += 8;
             } else { nextY = 32; }
 
@@ -283,69 +283,73 @@ document.addEventListener('DOMContentLoaded', () => {
             const maxWidth = pageWidth - (margin * 2);
             let currentY = matterY;
 
-            // Create a temporary off-screen container that mirrors the preview styling
-            const tempContainer = document.createElement('div');
-            tempContainer.style.cssText = `
-                position: absolute; left: -9999px; top: -9999px;
-                width: ${maxWidth * 3.78}px;
-                background: white; color: black;
-                font-family: 'Noto Sans Malayalam', 'Manjari', 'Rachana', sans-serif;
-                font-size: 14px; line-height: 1.8;
-                padding: 10px; box-sizing: border-box;
-                text-align: justify;
-            `;
-            tempContainer.innerHTML = letterMatter.innerHTML || '';
-            document.body.appendChild(tempContainer);
+            // Only render matter via html2canvas if there's actual content
+            const matterText = (letterMatter.innerText || '').trim();
+            if (matterText.length > 0) {
+                // Create a temporary off-screen container that mirrors the preview styling
+                const tempContainer = document.createElement('div');
+                tempContainer.style.cssText = `
+                    position: absolute; left: -9999px; top: -9999px;
+                    width: ${maxWidth * 3.78}px;
+                    background: white; color: black;
+                    font-family: 'Noto Sans Malayalam', 'Manjari', 'Rachana', sans-serif;
+                    font-size: 14px; line-height: 1.8;
+                    padding: 10px; box-sizing: border-box;
+                    text-align: justify;
+                `;
+                tempContainer.innerHTML = letterMatter.innerHTML || '';
+                document.body.appendChild(tempContainer);
 
-            // Render the matter content using html2canvas for perfect Unicode rendering
-            const matterCanvas = await html2canvas(tempContainer, {
-                scale: 3, // High DPI for sharp text
-                useCORS: true,
-                backgroundColor: '#ffffff',
-                logging: false,
-            });
+                // Render the matter content using html2canvas for perfect Unicode rendering
+                const matterCanvas = await html2canvas(tempContainer, {
+                    scale: 2, // Good DPI for sharp text, lower than 3 to reduce size
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                });
 
-            document.body.removeChild(tempContainer);
+                document.body.removeChild(tempContainer);
 
-            // Calculate dimensions to fit within PDF page width
-            const matterImgWidth = maxWidth;
-            const matterImgHeight = (matterCanvas.height / matterCanvas.width) * matterImgWidth;
-            const matterImgData = matterCanvas.toDataURL('image/png');
+                // Calculate dimensions to fit within PDF page width
+                const matterImgWidth = maxWidth;
+                const matterImgHeight = (matterCanvas.height / matterCanvas.width) * matterImgWidth;
+                const matterImgData = matterCanvas.toDataURL('image/jpeg', 0.85);
 
-            // Handle multi-page if content is too long
-            const availableHeight = pageHeight - matterY - 10;
-            if (matterImgHeight <= availableHeight) {
-                pdf.addImage(matterImgData, 'PNG', margin, currentY, matterImgWidth, matterImgHeight);
-                currentY += matterImgHeight;
-            } else {
-                // Multi-page: slice the canvas
-                const pxPerMm = matterCanvas.width / matterImgWidth;
-                let srcY = 0;
-                let remainingImgHeight = matterImgHeight;
-                let isFirstPage = true;
+                // Handle multi-page if content is too long
+                const availableHeight = pageHeight - matterY - 10;
+                if (matterImgHeight <= availableHeight) {
+                    pdf.addImage(matterImgData, 'JPEG', margin, currentY, matterImgWidth, matterImgHeight);
+                    currentY += matterImgHeight;
+                } else {
+                    // Multi-page: slice the canvas
+                    const pxPerMm = matterCanvas.width / matterImgWidth;
+                    let srcY = 0;
+                    let remainingImgHeight = matterImgHeight;
+                    let isFirstPage = true;
 
-                while (remainingImgHeight > 0) {
-                    const sliceAvailableHeight = isFirstPage ? availableHeight : (pageHeight - margin * 2);
-                    const sliceHeight = Math.min(remainingImgHeight, sliceAvailableHeight);
-                    const slicePxHeight = sliceHeight * pxPerMm;
+                    while (remainingImgHeight > 0) {
+                        const sliceAvailableHeight = isFirstPage ? availableHeight : (pageHeight - margin * 2);
+                        const sliceHeight = Math.min(remainingImgHeight, sliceAvailableHeight);
+                        const slicePxHeight = sliceHeight * pxPerMm;
 
-                    // Create a slice canvas
-                    const sliceCanvas = document.createElement('canvas');
-                    sliceCanvas.width = matterCanvas.width;
-                    sliceCanvas.height = slicePxHeight;
-                    const sliceCtx = sliceCanvas.getContext('2d');
-                    sliceCtx.drawImage(matterCanvas, 0, srcY, matterCanvas.width, slicePxHeight, 0, 0, matterCanvas.width, slicePxHeight);
+                        // Create a slice canvas
+                        const sliceCanvas = document.createElement('canvas');
+                        sliceCanvas.width = matterCanvas.width;
+                        sliceCanvas.height = slicePxHeight;
+                        const sliceCtx = sliceCanvas.getContext('2d');
+                        sliceCtx.drawImage(matterCanvas, 0, srcY, matterCanvas.width, slicePxHeight, 0, 0, matterCanvas.width, slicePxHeight);
 
-                    const sliceData = sliceCanvas.toDataURL('image/png');
-                    const yPos = isFirstPage ? currentY : margin;
+                        const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.85);
+                        const yPos = isFirstPage ? currentY : margin;
 
-                    if (!isFirstPage) pdf.addPage();
-                    pdf.addImage(sliceData, 'PNG', margin, yPos, matterImgWidth, sliceHeight);
+                        if (!isFirstPage) pdf.addPage();
+                        pdf.addImage(sliceData, 'JPEG', margin, yPos, matterImgWidth, sliceHeight);
 
-                    srcY += slicePxHeight;
-                    remainingImgHeight -= sliceHeight;
-                    currentY = yPos + sliceHeight;
-                    isFirstPage = false;
+                        srcY += slicePxHeight;
+                        remainingImgHeight -= sliceHeight;
+                        currentY = yPos + sliceHeight;
+                        isFirstPage = false;
+                    }
                 }
             }
 

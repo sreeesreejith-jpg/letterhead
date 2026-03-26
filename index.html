@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instant Letterhead Maker | School Apps</title>
-    <meta name="description" content="Create professional school letterheads instantly.">
+    <title>Instant Letterhead Maker | Nithara Apps</title>
+    <meta name="description" content="Create professional letterheads for schools, offices & institutions instantly.">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,28 +32,28 @@
                 <a href="../index.html" class="home-icon" title="Go Home">🏠</a>
                 <div class="header-text">
                     <h1>Instant Letterhead Maker</h1>
-                    <p class="subtitle">Create professional school documents in seconds</p>
+                    <p class="subtitle">Create professional letterheads for schools & offices in seconds</p>
                 </div>
             </div>
         </header>
 
-        <!-- Step 1: School Information -->
+        <!-- Step 1: Institution / Office Information -->
         <section class="card input-section" id="step1">
             <div class="card-header">
-                <h2><span class="step-num">1</span> School Details</h2>
+                <h2><span class="step-num">1</span> Institution / Office Details</h2>
             </div>
             <div class="input-grid">
                 <div class="input-field">
-                    <label for="school-code">School Code</label>
-                    <input type="text" id="school-code" placeholder="e.g. 12045" autocomplete="off">
+                    <label for="school-code">Institution Code</label>
+                    <input type="text" id="school-code" placeholder="e.g. 12045 (optional)" autocomplete="off">
                 </div>
                 <div class="input-field full-width">
-                    <label for="school-name">School Name</label>
-                    <input type="text" id="school-name" placeholder="Enter full school name" autocomplete="off">
+                    <label for="school-name">Institution / Office Name</label>
+                    <input type="text" id="school-name" placeholder="Enter school or office name" autocomplete="off">
                 </div>
                 <div class="input-field full-width">
                     <label for="school-address">Address</label>
-                    <textarea id="school-address" placeholder="Enter school address, city, district, PIN"
+                    <textarea id="school-address" placeholder="Enter full address, city, district, PIN"
                         rows="2"></textarea>
                 </div>
                 <div class="input-field">
@@ -168,8 +168,8 @@
                 <h3 class="preview-title">Paper Preview</h3>
                 <div id="live-paper-preview" class="paper-page">
                     <div class="paper-header">
-                        <h1 id="live-prev-school-name">[School Name]</h1>
-                        <p id="live-prev-school-code">School Code: [Code]</p>
+                        <h1 id="live-prev-school-name">[Institution Name]</h1>
+                        <p id="live-prev-school-code">[Code]</p>
                         <p id="live-prev-school-address">[Full Address]</p>
                     </div>
                     <div class="paper-meta">
@@ -192,7 +192,7 @@
                     <span>📥 Download PDF</span>
                 </button>
                 <button id="reset-btn" class="reset-btn">
-                    <span>🔄 Start Over</span>
+                    <span>🔄 Reset</span>
                 </button>
             </div>
         </section>
