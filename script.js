@@ -211,11 +211,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 5. Professional PDF Generation (High Fidelity Hybrid)
+    // 5. Professional PDF Generation (High Fidelity Unicode Support)
     downloadBtn.addEventListener('click', async () => {
         const { jsPDF } = window.jspdf;
-
-        // No mandatory fields - allow blank letterhead download as requested.
 
         downloadBtn.textContent = '⏳ Creating...';
         downloadBtn.disabled = true;
@@ -225,150 +223,101 @@ document.addEventListener('DOMContentLoaded', () => {
             const pageWidth = pdf.internal.pageSize.getWidth();
             const pageHeight = pdf.internal.pageSize.getHeight();
             const margin = 20;
+            const contentWidth = pageWidth - (margin * 2);
 
-            // 1. Draw HEADER (Sharp Native Text)
-            pdf.setDrawColor(0);
-            pdf.setLineWidth(1.5);
-            pdf.line(margin, 15, pageWidth - margin, 15); // Top bar
+            // Create a high-fidelity temporary container for the ENTIRE letterhead
+            const tempContainer = document.createElement('div');
+            tempContainer.style.cssText = `
+                position: absolute; left: -9999px; top: -9999px;
+                width: 800px; /* Standard width for rendering */
+                background: white; color: black;
+                font-family: 'Outfit', 'Noto Sans Malayalam', sans-serif;
+                padding: 40px; box-sizing: border-box;
+            `;
 
-            pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(22);
-            pdf.setTextColor(0);
-            const nameLines = pdf.splitTextToSize(schoolName.value.toUpperCase(), pageWidth - (margin * 2));
-            pdf.text(nameLines, pageWidth / 2, 28, { align: 'center' });
+            // Build the HTML structure identical to the professional preview
+            tempContainer.innerHTML = `
+                <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 25px;">
+                    <h1 style="margin: 0; font-size: 28pt; font-weight: 900; text-transform: uppercase;">${schoolName.value || ''}</h1>
+                    ${schoolCode.value ? `<p style="margin: 5px 0; font-size: 14pt; font-weight: bold;">Code: ${schoolCode.value}</p>` : ''}
+                    <p style="margin: 5px 0; font-size: 12pt; line-height: 1.4;">${schoolAddress.value || ''}</p>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 30px; font-size: 12pt; font-weight: bold;">
+                    <span>${letterPlace.value ? `Place: ${letterPlace.value}` : ''}</span>
+                    <span>${letterDate.value ? `Date: ${letterDate.value}` : ''}</span>
+                </div>
+                ${letterSubhead.value ? `
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <span style="font-size: 14pt; font-weight: 800; text-transform: uppercase; text-decoration: underline; letter-spacing: 1px;">
+                            ${letterSubhead.value}
+                        </span>
+                    </div>
+                ` : ''}
+                <div style="font-size: 13pt; line-height: 1.8; text-align: justify; margin-bottom: 50px; min-height: 300px; font-family: 'Noto Sans Malayalam', serif;">
+                    ${letterMatter.innerHTML || ''}
+                </div>
+                ${letterDesignation.value ? `
+                    <div style="text-align: right; margin-top: 50px;">
+                        <p style="font-size: 12pt; margin-bottom: 40px;">Sincerely,</p>
+                        <p style="font-size: 13pt; font-weight: bold;">____________________</p>
+                        <p style="font-size: 13pt; font-weight: bold; margin-top: 5px;">${letterDesignation.value}</p>
+                    </div>
+                ` : ''}
+            `;
 
-            let nextY = 36;
-            if (schoolCode.value) {
-                pdf.setFontSize(14); // BIGGER
-                pdf.setFont('helvetica', 'bold'); // BOLD
-                pdf.text(`Code: ${schoolCode.value}`, pageWidth / 2, nextY, { align: 'center' });
-                nextY += 8;
-            } else { nextY = 32; }
+            document.body.appendChild(tempContainer);
 
-            if (schoolAddress.value) {
-                pdf.setFontSize(12); // BIGGER
-                pdf.setFont('helvetica', 'bold'); // BOLD
-                pdf.setTextColor(40); // Darker
-                const addressLines = pdf.splitTextToSize(schoolAddress.value, pageWidth - (margin * 3));
-                pdf.text(addressLines, pageWidth / 2, nextY, { align: 'center' });
-                nextY += (addressLines.length * 5);
-            }
+            // Render to canvas
+            const canvas = await html2canvas(tempContainer, {
+                scale: 3, // High DPI for printing
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                logging: false,
+            });
 
-            // Divider Line
-            pdf.setDrawColor(0);
-            pdf.setLineWidth(0.5);
-            pdf.line(margin, nextY, pageWidth - margin, nextY);
+            document.body.removeChild(tempContainer);
 
-            // 2. PLACE & DATE
-            pdf.setTextColor(0);
-            pdf.setFontSize(12);
-            pdf.setFont('helvetica', 'bold');
-            if (letterPlace.value) pdf.text(`Place: ${letterPlace.value}`, margin, nextY + 10);
-            if (letterDate.value) pdf.text(`Date: ${letterDate.value}`, pageWidth - margin, nextY + 10, { align: 'right' });
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            const imgWidth = contentWidth;
+            const imgHeight = (canvas.height / canvas.width) * imgWidth;
 
-            // 3. SUBHEADING
-            let subheadY = nextY + 22;
-            let matterY = subheadY;
-            if (letterSubhead.value) {
-                pdf.setFont('helvetica', 'bold');
-                pdf.setFontSize(14);
-                const st = letterSubhead.value.toUpperCase();
-                pdf.text(st, pageWidth / 2, subheadY, { align: 'center' });
-                const tw = pdf.getTextWidth(st);
-                pdf.line(pageWidth / 2 - (tw / 2), subheadY + 1.2, pageWidth / 2 + (tw / 2), subheadY + 1.2);
-                matterY = subheadY + 12;
-            }
+            // Handle Multi-page splitting
+            let heightLeft = imgHeight;
+            let position = margin;
+            let pageNum = 1;
 
-            // 4. RICH TEXT MATTER (Rendered as Image for Unicode/Malayalam support)
-            const maxWidth = pageWidth - (margin * 2);
-            let currentY = matterY;
+            if (imgHeight <= (pageHeight - margin * 2)) {
+                pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
+            } else {
+                // Multi-page logic
+                const pxPerMm = canvas.width / imgWidth;
+                const pagePxHeight = (pageHeight - margin * 2) * pxPerMm;
 
-            // Only render matter via html2canvas if there's actual content
-            const matterText = (letterMatter.innerText || '').trim();
-            if (matterText.length > 0) {
-                // Create a temporary off-screen container that mirrors the preview styling
-                const tempContainer = document.createElement('div');
-                tempContainer.style.cssText = `
-                    position: absolute; left: -9999px; top: -9999px;
-                    width: ${maxWidth * 3.78}px;
-                    background: white; color: black;
-                    font-family: 'Noto Sans Malayalam', 'Manjari', 'Rachana', sans-serif;
-                    font-size: 14px; line-height: 1.8;
-                    padding: 10px; box-sizing: border-box;
-                    text-align: justify;
-                `;
-                tempContainer.innerHTML = letterMatter.innerHTML || '';
-                document.body.appendChild(tempContainer);
+                let srcY = 0;
+                while (heightLeft > 0) {
+                    const sliceHeightMm = Math.min(heightLeft, pageHeight - margin * 2);
+                    const slicePxHeight = sliceHeightMm * pxPerMm;
 
-                // Render the matter content using html2canvas for perfect Unicode rendering
-                const matterCanvas = await html2canvas(tempContainer, {
-                    scale: 2, // Good DPI for sharp text, lower than 3 to reduce size
-                    useCORS: true,
-                    backgroundColor: '#ffffff',
-                    logging: false,
-                });
+                    const sliceCanvas = document.createElement('canvas');
+                    sliceCanvas.width = canvas.width;
+                    sliceCanvas.height = slicePxHeight;
+                    const ctx = sliceCanvas.getContext('2d');
+                    ctx.drawImage(canvas, 0, srcY, canvas.width, slicePxHeight, 0, 0, canvas.width, slicePxHeight);
 
-                document.body.removeChild(tempContainer);
+                    const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.9);
+                    if (pageNum > 1) pdf.addPage();
+                    pdf.addImage(sliceData, 'JPEG', margin, margin, imgWidth, sliceHeightMm);
 
-                // Calculate dimensions to fit within PDF page width
-                const matterImgWidth = maxWidth;
-                const matterImgHeight = (matterCanvas.height / matterCanvas.width) * matterImgWidth;
-                const matterImgData = matterCanvas.toDataURL('image/jpeg', 0.85);
-
-                // Handle multi-page if content is too long
-                const availableHeight = pageHeight - matterY - 10;
-                if (matterImgHeight <= availableHeight) {
-                    pdf.addImage(matterImgData, 'JPEG', margin, currentY, matterImgWidth, matterImgHeight);
-                    currentY += matterImgHeight;
-                } else {
-                    // Multi-page: slice the canvas
-                    const pxPerMm = matterCanvas.width / matterImgWidth;
-                    let srcY = 0;
-                    let remainingImgHeight = matterImgHeight;
-                    let isFirstPage = true;
-
-                    while (remainingImgHeight > 0) {
-                        const sliceAvailableHeight = isFirstPage ? availableHeight : (pageHeight - margin * 2);
-                        const sliceHeight = Math.min(remainingImgHeight, sliceAvailableHeight);
-                        const slicePxHeight = sliceHeight * pxPerMm;
-
-                        // Create a slice canvas
-                        const sliceCanvas = document.createElement('canvas');
-                        sliceCanvas.width = matterCanvas.width;
-                        sliceCanvas.height = slicePxHeight;
-                        const sliceCtx = sliceCanvas.getContext('2d');
-                        sliceCtx.drawImage(matterCanvas, 0, srcY, matterCanvas.width, slicePxHeight, 0, 0, matterCanvas.width, slicePxHeight);
-
-                        const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.85);
-                        const yPos = isFirstPage ? currentY : margin;
-
-                        if (!isFirstPage) pdf.addPage();
-                        pdf.addImage(sliceData, 'JPEG', margin, yPos, matterImgWidth, sliceHeight);
-
-                        srcY += slicePxHeight;
-                        remainingImgHeight -= sliceHeight;
-                        currentY = yPos + sliceHeight;
-                        isFirstPage = false;
-                    }
+                    srcY += slicePxHeight;
+                    heightLeft -= sliceHeightMm;
+                    pageNum++;
                 }
             }
 
-            const imgHeight = currentY - matterY; // Pseudo height for signature positioning
-
-            // 5. SIGNATURE (Native Text - Conditional)
-            if (letterDesignation.value.trim()) {
-                const signatureY = Math.max(matterY + imgHeight + 20, pageHeight - 45);
-                pdf.setFontSize(12);
-                pdf.setFont('helvetica', 'bold');
-                pdf.text('Sincerely,', pageWidth - margin - 5, signatureY, { align: 'right' });
-                pdf.text('____________________', pageWidth - margin - 5, signatureY + 16, { align: 'right' });
-                pdf.text(letterDesignation.value, pageWidth - margin - 5, signatureY + 22, { align: 'right' });
-            }
-
-            pdf.save(`${schoolName.value.replace(/[^a-z0-9]/gi, '_')}_Letter.pdf`);
+            pdf.save(`${(schoolName.value || 'Letterhead').replace(/[^a-z0-9]/gi, '_')}.pdf`);
         } catch (err) {
             console.error(err);
-            alert('PDF Creation Error');
+            alert('PDF Creation Error: ' + err.message);
         } finally {
             downloadBtn.textContent = '📥 Download PDF';
             downloadBtn.disabled = false;
